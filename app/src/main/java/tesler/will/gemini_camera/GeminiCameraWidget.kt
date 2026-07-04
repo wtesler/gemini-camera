@@ -37,7 +37,7 @@ class GeminiCameraWidget : GlanceAppWidget() {
     private fun WidgetContent() {
         val context = LocalContext.current
         val intent = Intent(context, CameraActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
 
         Box(

@@ -141,6 +141,7 @@ private fun CameraContent(
     DisposableEffect(Unit) {
         onDispose {
             cameraExecutor.shutdown()
+            clearCache(context)
         }
     }
 }
@@ -152,7 +153,11 @@ private fun takePhoto(
     onImageCaptured: (File) -> Unit
 ) {
     val outputDirectory = File(context.cacheDir, "images").apply {
-        if (!exists()) mkdirs()
+        if (!exists()) {
+            mkdirs()
+        } else {
+            clearCache(context)
+        }
     }
     val photoFile = File(
         outputDirectory,
@@ -196,4 +201,9 @@ private fun shareImageToGemini(context: Context, file: File) {
     } catch (e: Exception) {
         Log.e("CameraScreen", "Failed to start sharing intent", e)
     }
+}
+
+private fun clearCache(context: Context) {
+    val outputDirectory = File(context.cacheDir, "images")
+    outputDirectory.listFiles()?.forEach { it.delete() }
 }

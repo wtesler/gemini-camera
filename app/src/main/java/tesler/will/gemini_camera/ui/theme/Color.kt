@@ -31,7 +31,7 @@ val OnSurfaceLight = Color(0xFF1A1C1E)
 // Dark Theme Colors
 val PrimaryDark = Color(0xFF9ECAFF)
 val OnPrimaryDark = Color(0xFF003258)
-val PrimaryContainerDark = Color(0xFF00497D)
+val PrimaryContainerDark = Color(0xFF252C3D)
 val OnPrimaryContainerDark = Color(0xFFD1E4FF)
 
 val SecondaryDark = Color(0xFFBBC7DB)

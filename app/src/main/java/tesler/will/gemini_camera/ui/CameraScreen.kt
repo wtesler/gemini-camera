@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -72,6 +73,7 @@ private fun CameraContent(
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val imageCapture = remember { ImageCapture.Builder().build() }
     val previewView = remember { PreviewView(context) }
+    var camera by remember { mutableStateOf<Camera?>(null) }
 
     LaunchedEffect(Unit) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -83,7 +85,7 @@ private fun CameraContent(
 
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
+                camera = cameraProvider.bindToLifecycle(
                     lifecycleOwner,
                     CameraSelector.DEFAULT_BACK_CAMERA,
                     preview,
@@ -100,6 +102,29 @@ private fun CameraContent(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
+
+        // Zoom Controls
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 160.dp)
+                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            listOf(1f, 2f, 3f).forEach { ratio ->
+                TextButton(
+                    onClick = { camera?.cameraControl?.setZoomRatio(ratio) },
+                    modifier = Modifier.sizeIn(minWidth = 48.dp)
+                ) {
+                    Text(
+                        text = "${ratio.toInt()}x",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            }
+        }
 
         // Capture Button
         IconButton(

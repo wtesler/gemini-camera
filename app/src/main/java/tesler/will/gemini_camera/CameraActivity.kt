@@ -24,11 +24,7 @@ class CameraActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Gemini_cameraTheme {
-                CameraScreen(
-                    onClose = {
-                        finish()
-                    }
-                )
+                CameraScreen()
             }
         }
     }

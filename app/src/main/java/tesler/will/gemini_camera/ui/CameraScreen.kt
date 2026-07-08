@@ -17,14 +17,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Camera
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -41,13 +40,12 @@ import java.util.concurrent.Executors
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraScreen(
-    onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     if (cameraPermissionState.status.isGranted) {
-        CameraContent(onClose = onClose, modifier = modifier)
+        CameraContent(modifier = modifier)
     } else {
         Column(
             modifier = modifier.fillMaxSize().padding(24.dp),
@@ -65,7 +63,6 @@ fun CameraScreen(
 
 @Composable
 private fun CameraContent(
-    onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -74,6 +71,7 @@ private fun CameraContent(
     val imageCapture = remember { ImageCapture.Builder().build() }
     val previewView = remember { PreviewView(context) }
     var camera by remember { mutableStateOf<Camera?>(null) }
+    var currentZoomRatio by remember { mutableFloatStateOf(1f) }
 
     LaunchedEffect(Unit) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -113,13 +111,20 @@ private fun CameraContent(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             listOf(1f, 2f, 3f).forEach { ratio ->
+                val isSelected = currentZoomRatio == ratio
                 TextButton(
-                    onClick = { camera?.cameraControl?.setZoomRatio(ratio) },
-                    modifier = Modifier.sizeIn(minWidth = 48.dp)
+                    onClick = {
+                        currentZoomRatio = ratio
+                        camera?.cameraControl?.setZoomRatio(ratio)
+                    },
+                    modifier = Modifier.sizeIn(minWidth = 48.dp),
+                    colors = ButtonDefaults.textButtonColors(
+                        containerColor = if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Transparent
+                    )
                 ) {
                     Text(
                         text = "${ratio.toInt()}x",
-                        color = Color.White,
+                        color = if (isSelected) Color.Yellow else Color.White,
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
@@ -144,21 +149,6 @@ private fun CameraContent(
                 contentDescription = "Capture",
                 modifier = Modifier.size(48.dp),
                 tint = Color.Black
-            )
-        }
-
-        // Close Button
-        IconButton(
-            onClick = onClose,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-                .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Close,
-                contentDescription = "Close",
-                tint = Color.White
             )
         }
     }

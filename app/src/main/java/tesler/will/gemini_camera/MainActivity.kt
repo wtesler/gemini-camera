@@ -62,11 +62,7 @@ class MainActivity : ComponentActivity() {
                         SettingsScreen()
                     }
                     entry<Route.Camera> {
-                        CameraScreen(
-                            onClose = {
-                                backStack.removeLastOrNull()
-                            }
-                        )
+                        CameraScreen()
                     }
                 }
 

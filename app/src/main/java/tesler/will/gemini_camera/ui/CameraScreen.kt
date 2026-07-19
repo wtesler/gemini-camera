@@ -3,6 +3,7 @@ package tesler.will.gemini_camera.ui
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
 import androidx.camera.core.Camera
@@ -25,6 +26,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -122,89 +124,52 @@ private fun CameraContent(
         }, ContextCompat.getMainExecutor(context))
     }
 
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
 
-        // Flash Controls
-        Row(
+        FlashControls(
+            flashMode = flashMode,
+            onFlashModeChange = { flashMode = it },
             modifier = Modifier
-                .align(Alignment.TopEnd)
+                .align(if (isLandscape) Alignment.TopStart else Alignment.TopEnd)
                 .statusBarsPadding()
+                .navigationBarsPadding()
+                .displayCutoutPadding()
                 .padding(16.dp, 2.dp, 16.dp, 16.dp)
-                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            FlashMode.entries.forEach { mode ->
-                val isSelected = flashMode == mode
-                IconButton(
-                    onClick = { flashMode = mode },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = when (mode) {
-                            FlashMode.OFF -> Icons.Rounded.FlashOff
-                            FlashMode.ON -> Icons.Rounded.FlashOn
-                            FlashMode.TORCH -> Icons.Rounded.FlashlightOn
-                        },
-                        contentDescription = "Flash ${mode.name}",
-                        tint = if (isSelected) Color.Yellow else Color.White
-                    )
-                }
-            }
-        }
+        )
 
-        // Zoom Controls
-        Row(
+        AdaptiveControlBar(
+            isLandscape = isLandscape,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 160.dp)
-                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                .padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            listOf(1f, 2f, 3f, 5f, 10f).forEach { ratio ->
-                val isSelected = currentZoomRatio == ratio
-                TextButton(
-                    onClick = {
-                        currentZoomRatio = ratio
-                        camera?.cameraControl?.setZoomRatio(ratio)
-                    },
-                    modifier = Modifier.sizeIn(minWidth = 48.dp),
-                    colors = ButtonDefaults.textButtonColors(
-                        containerColor = if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Transparent
+                .align(if (isLandscape) Alignment.CenterEnd else Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .displayCutoutPadding()
+                .padding(PaddingValues(
+                        end = if (isLandscape) 12.dp else 0.dp,
+                        bottom = if (isLandscape) 0.dp else 12.dp
                     )
-                ) {
-                    Text(
-                        text = "${ratio.toInt()}x",
-                        color = if (isSelected) Color.Yellow else Color.White,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            }
-        }
-
-        // Capture Button
-        IconButton(
-            onClick = {
-                takePhoto(context, imageCapture, cameraExecutor) { file ->
-                    shareImageToGemini(context, file)
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 64.dp)
-                .size(80.dp)
-                .background(Color.White.copy(alpha = 0.5f), CircleShape)
+                )
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Camera,
-                contentDescription = "Capture",
-                modifier = Modifier.size(48.dp),
-                tint = Color.Black
+            ZoomControls(
+                currentZoomRatio = currentZoomRatio,
+                onZoomRatioChange = { ratio ->
+                    currentZoomRatio = ratio
+                    camera?.cameraControl?.setZoomRatio(ratio)
+                },
+                isLandscape = isLandscape
+            )
+            CaptureButton(
+                onClick = {
+                    takePhoto(context, imageCapture, cameraExecutor) { file ->
+                        shareImageToGemini(context, file)
+                    }
+                }
             )
         }
     }
@@ -214,6 +179,129 @@ private fun CameraContent(
             cameraExecutor.shutdown()
             clearCache(context)
         }
+    }
+}
+
+@Composable
+private fun AdaptiveControlBar(
+    isLandscape: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    if (isLandscape) {
+        Row(
+            modifier = modifier,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            content = { content() }
+        )
+    } else {
+        Column(
+            modifier = modifier,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            content = { content() }
+        )
+    }
+}
+
+@Composable
+private fun FlashControls(
+    flashMode: FlashMode,
+    onFlashModeChange: (FlashMode) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        FlashMode.entries.forEach { mode ->
+            val isSelected = flashMode == mode
+            IconButton(
+                onClick = { onFlashModeChange(mode) },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = when (mode) {
+                        FlashMode.OFF -> Icons.Rounded.FlashOff
+                        FlashMode.ON -> Icons.Rounded.FlashOn
+                        FlashMode.TORCH -> Icons.Rounded.FlashlightOn
+                    },
+                    contentDescription = "Flash ${mode.name}",
+                    tint = if (isSelected) Color.Yellow else Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ZoomControls(
+    currentZoomRatio: Float,
+    onZoomRatioChange: (Float) -> Unit,
+    isLandscape: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val arrangement = Arrangement.spacedBy(4.dp)
+    val content = @Composable {
+        listOf(1f, 2f, 3f, 5f, 10f).forEach { ratio ->
+            val isSelected = currentZoomRatio == ratio
+            TextButton(
+                onClick = { onZoomRatioChange(ratio) },
+                modifier = Modifier.sizeIn(minWidth = 48.dp),
+                colors = ButtonDefaults.textButtonColors(
+                    containerColor = if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Transparent
+                )
+            ) {
+                Text(
+                    text = "${ratio.toInt()}x",
+                    color = if (isSelected) Color.Yellow else Color.White,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+    }
+
+    if (isLandscape) {
+        Column(
+            modifier = modifier
+                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                .padding(vertical = 4.dp),
+            verticalArrangement = arrangement
+        ) {
+            content()
+        }
+    } else {
+        Row(
+            modifier = modifier
+                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = arrangement
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun CaptureButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier
+            .size(80.dp)
+            .background(Color.White.copy(alpha = 0.5f), CircleShape)
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Camera,
+            contentDescription = "Capture",
+            modifier = Modifier.size(48.dp),
+            tint = Color.Black
+        )
     }
 }
 

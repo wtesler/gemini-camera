@@ -252,10 +252,12 @@ private fun ZoomControls(
             val isSelected = currentZoomRatio == ratio
             TextButton(
                 onClick = { onZoomRatioChange(ratio) },
-                modifier = Modifier.sizeIn(minWidth = 48.dp),
+                modifier = Modifier.size(48.dp).padding(4.dp),
+                shape = CircleShape,
                 colors = ButtonDefaults.textButtonColors(
                     containerColor = if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Transparent
-                )
+                ),
+                contentPadding = PaddingValues(0.dp),
             ) {
                 Text(
                     text = "${ratio.toInt()}x",
@@ -269,17 +271,15 @@ private fun ZoomControls(
     if (isLandscape) {
         Column(
             modifier = modifier
-                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                .padding(vertical = 4.dp),
-            verticalArrangement = arrangement
+                .background(Color.Black.copy(alpha = 0.4f), CircleShape),
+            verticalArrangement = arrangement,
         ) {
             content()
         }
     } else {
         Row(
             modifier = modifier
-                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                .padding(horizontal = 4.dp),
+                .background(Color.Black.copy(alpha = 0.4f), CircleShape),
             horizontalArrangement = arrangement
         ) {
             content()

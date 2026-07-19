@@ -110,7 +110,7 @@ private fun CameraContent(
                 .padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            listOf(1f, 2f, 3f).forEach { ratio ->
+            listOf(1f, 2f, 3f, 5f, 10f).forEach { ratio ->
                 val isSelected = currentZoomRatio == ratio
                 TextButton(
                     onClick = {

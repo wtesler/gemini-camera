@@ -23,6 +23,7 @@ import androidx.compose.material.icons.rounded.FlashOn
 import androidx.compose.material.icons.rounded.FlashlightOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -80,11 +81,12 @@ private fun CameraContent(
     val imageCapture = remember { ImageCapture.Builder().build() }
     val previewView = remember { PreviewView(context) }
     var camera by remember { mutableStateOf<Camera?>(null) }
-    var currentZoomRatio by remember { mutableFloatStateOf(1f) }
-    var flashMode by remember { mutableStateOf(FlashMode.OFF) }
+    var currentZoomRatio by rememberSaveable { mutableStateOf(1f) }
+    var flashMode by rememberSaveable { mutableStateOf(FlashMode.OFF) }
 
-    LaunchedEffect(flashMode, camera) {
+    LaunchedEffect(currentZoomRatio, flashMode, camera) {
         camera?.let {
+            it.cameraControl.setZoomRatio(currentZoomRatio)
             when (flashMode) {
                 FlashMode.OFF -> {
                     imageCapture.flashMode = ImageCapture.FLASH_MODE_OFF

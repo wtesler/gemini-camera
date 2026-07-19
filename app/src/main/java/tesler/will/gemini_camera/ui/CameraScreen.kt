@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Camera
+import androidx.compose.material.icons.rounded.FlashOff
+import androidx.compose.material.icons.rounded.FlashOn
+import androidx.compose.material.icons.rounded.FlashlightOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +39,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
+private enum class FlashMode {
+    OFF, ON, TORCH
+}
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -72,6 +79,26 @@ private fun CameraContent(
     val previewView = remember { PreviewView(context) }
     var camera by remember { mutableStateOf<Camera?>(null) }
     var currentZoomRatio by remember { mutableFloatStateOf(1f) }
+    var flashMode by remember { mutableStateOf(FlashMode.OFF) }
+
+    LaunchedEffect(flashMode, camera) {
+        camera?.let {
+            when (flashMode) {
+                FlashMode.OFF -> {
+                    imageCapture.flashMode = ImageCapture.FLASH_MODE_OFF
+                    it.cameraControl.enableTorch(false)
+                }
+                FlashMode.ON -> {
+                    imageCapture.flashMode = ImageCapture.FLASH_MODE_ON
+                    it.cameraControl.enableTorch(false)
+                }
+                FlashMode.TORCH -> {
+                    imageCapture.flashMode = ImageCapture.FLASH_MODE_ON
+                    it.cameraControl.enableTorch(true)
+                }
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -100,6 +127,35 @@ private fun CameraContent(
             factory = { previewView },
             modifier = Modifier.fillMaxSize()
         )
+
+        // Flash Controls
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(16.dp, 2.dp, 16.dp, 16.dp)
+                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            FlashMode.entries.forEach { mode ->
+                val isSelected = flashMode == mode
+                IconButton(
+                    onClick = { flashMode = mode },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = when (mode) {
+                            FlashMode.OFF -> Icons.Rounded.FlashOff
+                            FlashMode.ON -> Icons.Rounded.FlashOn
+                            FlashMode.TORCH -> Icons.Rounded.FlashlightOn
+                        },
+                        contentDescription = "Flash ${mode.name}",
+                        tint = if (isSelected) Color.Yellow else Color.White
+                    )
+                }
+            }
+        }
 
         // Zoom Controls
         Row(

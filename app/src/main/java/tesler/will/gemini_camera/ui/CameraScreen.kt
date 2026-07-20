@@ -29,11 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -77,6 +79,7 @@ private fun CameraContent(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsStateWithLifecycle()
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val imageCapture = remember { ImageCapture.Builder().build() }
     val previewView = remember { PreviewView(context) }
@@ -84,21 +87,23 @@ private fun CameraContent(
     var currentZoomRatio by rememberSaveable { mutableStateOf(1f) }
     var flashMode by rememberSaveable { mutableStateOf(FlashMode.OFF) }
 
-    LaunchedEffect(currentZoomRatio, flashMode, camera) {
-        camera?.let {
-            it.cameraControl.setZoomRatio(currentZoomRatio)
-            when (flashMode) {
-                FlashMode.OFF -> {
-                    imageCapture.flashMode = ImageCapture.FLASH_MODE_OFF
-                    it.cameraControl.enableTorch(false)
-                }
-                FlashMode.ON -> {
-                    imageCapture.flashMode = ImageCapture.FLASH_MODE_ON
-                    it.cameraControl.enableTorch(false)
-                }
-                FlashMode.TORCH -> {
-                    imageCapture.flashMode = ImageCapture.FLASH_MODE_ON
-                    it.cameraControl.enableTorch(true)
+    LaunchedEffect(currentZoomRatio, flashMode, camera, lifecycleState) {
+        if (lifecycleState.isAtLeast(Lifecycle.State.STARTED)) {
+            camera?.let {
+                it.cameraControl.setZoomRatio(currentZoomRatio)
+                when (flashMode) {
+                    FlashMode.OFF -> {
+                        imageCapture.flashMode = ImageCapture.FLASH_MODE_OFF
+                        it.cameraControl.enableTorch(false)
+                    }
+                    FlashMode.ON -> {
+                        imageCapture.flashMode = ImageCapture.FLASH_MODE_ON
+                        it.cameraControl.enableTorch(false)
+                    }
+                    FlashMode.TORCH -> {
+                        imageCapture.flashMode = ImageCapture.FLASH_MODE_ON
+                        it.cameraControl.enableTorch(true)
+                    }
                 }
             }
         }
